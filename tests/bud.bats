@@ -3584,14 +3584,20 @@ function validate_instance_compression {
 EOF
   mkdir -p ${TEST_SCRATCH_DIR}/subdir
   tar -cv -C ${TEST_SCRATCH_DIR} -f ${TEST_SCRATCH_DIR}/subdir/context.tar.gz Containerfile
+  # a raw Dockerfile is fetched a second time after it fails to extract as a tarball
+  echo "FROM busybox" > ${TEST_SCRATCH_DIR}/subdir/Dockerfile
   starthttpd "${TEST_SCRATCH_DIR}" "" "${TEST_SCRATCH_DIR}"/localhost.crt "${TEST_SCRATCH_DIR}"/localhost.key
   run_buildah 125 build $WITH_POLICY_JSON -t ${target} https://0.0.0.0:${HTTP_SERVER_PORT}/subdir/context.tar.gz
   assert "$output" =~ "tls: failed to verify certificate"
   run_buildah 125 build $WITH_POLICY_JSON --tls-verify=true -t ${target} https://0.0.0.0:${HTTP_SERVER_PORT}/subdir/context.tar.gz
   assert "$output" =~ "tls: failed to verify certificate"
   run_buildah build $WITH_POLICY_JSON --tls-verify=false -t ${target} https://0.0.0.0:${HTTP_SERVER_PORT}/subdir/context.tar.gz
+  run_buildah 125 build $WITH_POLICY_JSON -t ${target}-raw https://0.0.0.0:${HTTP_SERVER_PORT}/subdir/Dockerfile
+  assert "$output" =~ "tls: failed to verify certificate"
+  run_buildah build $WITH_POLICY_JSON --tls-verify=false -t ${target}-raw https://0.0.0.0:${HTTP_SERVER_PORT}/subdir/Dockerfile
   stophttpd
   run_buildah from ${target}
+  run_buildah from ${target}-raw
 }
 
 @test "bud-git-context" {

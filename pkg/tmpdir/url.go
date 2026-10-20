@@ -213,7 +213,7 @@ func downloadToDirectory(ctx context.Context, options *URLOptions, url, dir stri
 		if err != nil {
 			return err
 		}
-		resp1, err := http.DefaultClient.Do(req1)
+		resp1, err := httpClient.Do(req1)
 		if err != nil {
 			return err
 		}
